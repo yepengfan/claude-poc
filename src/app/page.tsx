@@ -68,6 +68,7 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-background font-sans">
       <header className="border-b border-foreground/10 px-4 py-3">
         <h1 className="text-center text-lg font-semibold">Claude Chatbot</h1>
+        <p className="text-center text-sm text-foreground/60">Powered by Claude</p>
       </header>
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col overflow-hidden">
