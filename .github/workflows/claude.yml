@@ -25,6 +25,7 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: "--max-turns 15"
           show_full_output: true
+          additional_permissions: "gh:*"
           prompt: |
             Review this pull request. Use `gh pr diff` to see the changes, then post your review as a PR comment using `gh pr comment` with the following format:
 
@@ -63,3 +64,4 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: "--max-turns 15"
+          additional_permissions: "gh:*"
