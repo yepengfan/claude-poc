@@ -1,7 +1,6 @@
 ---
 name: review
 description: Review the current branch's changes against main. Use this to get a local code review before pushing or creating a PR.
-allowed-tools: Bash, Read, Glob, Grep
 ---
 
 Review the changes on the current branch compared to the main branch.
