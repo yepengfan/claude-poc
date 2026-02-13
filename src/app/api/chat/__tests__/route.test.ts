@@ -1,5 +1,8 @@
 /**
  * @jest-environment node
+ *
+ * API routes run in Node.js, not the browser, so we override the default
+ * jsdom environment to get access to Node globals like Request and Response.
  */
 import { POST } from "../route";
 import Anthropic from "@anthropic-ai/sdk";

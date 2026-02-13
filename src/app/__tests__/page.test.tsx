@@ -1,3 +1,7 @@
+import { TextEncoder, TextDecoder } from "util";
+
+Object.assign(global, { TextEncoder, TextDecoder });
+
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
@@ -5,11 +9,6 @@ import Home from "../page";
 
 // Mock scrollIntoView which doesn't exist in jsdom
 Element.prototype.scrollIntoView = jest.fn();
-
-// Mock TextDecoder for jsdom environment
-global.TextDecoder = jest.fn().mockImplementation(() => ({
-  decode: (value: string) => value,
-})) as unknown as typeof TextDecoder;
 
 // Mock react-markdown to avoid ESM issues in Jest
 jest.mock("react-markdown", () => {
@@ -19,12 +18,13 @@ jest.mock("react-markdown", () => {
 });
 
 function mockFetchStream(text: string) {
+  const encoder = new TextEncoder();
   let called = false;
   const reader = {
     read: jest.fn().mockImplementation(() => {
       if (!called) {
         called = true;
-        return Promise.resolve({ done: false, value: text });
+        return Promise.resolve({ done: false, value: encoder.encode(text) });
       }
       return Promise.resolve({ done: true, value: undefined });
     }),
@@ -73,11 +73,14 @@ describe("Home page", () => {
       await userEvent.click(screen.getByRole("button", { name: "Send" }));
 
       await waitFor(() => {
-        expect(fetchSpy).toHaveBeenCalledWith("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: expect.stringContaining('"Hello"'),
-        });
+        expect(fetchSpy).toHaveBeenCalledWith(
+          "/api/chat",
+          expect.objectContaining({ method: "POST" }),
+        );
+        const callBody = JSON.parse(fetchSpy.mock.calls[0][1].body);
+        expect(callBody.messages).toContainEqual(
+          expect.objectContaining({ role: "user", content: "Hello" }),
+        );
       });
     });
 
@@ -100,6 +103,18 @@ describe("Home page", () => {
 
       await waitFor(() => {
         expect(screen.getByText("Bot reply")).toBeInTheDocument();
+      });
+    });
+
+    it("shows error message when API call fails", async () => {
+      global.fetch = jest.fn().mockRejectedValue(new Error("Network error"));
+
+      render(<Home />);
+      await userEvent.type(screen.getByPlaceholderText("Type your message..."), "Hi");
+      await userEvent.click(screen.getByRole("button", { name: "Send" }));
+
+      await waitFor(() => {
+        expect(screen.getByText("Sorry, something went wrong.")).toBeInTheDocument();
       });
     });
 
