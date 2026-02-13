@@ -1,7 +1,3 @@
-import { TextEncoder, TextDecoder } from "util";
-
-Object.assign(global, { TextEncoder, TextDecoder });
-
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
@@ -135,8 +131,19 @@ describe("Home page", () => {
       });
     });
 
+    it("shows error message when API returns non-ok response", async () => {
+      global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 500 });
+
+      render(<Home />);
+      await userEvent.type(screen.getByPlaceholderText("Type your message..."), TEST_USER_MESSAGE);
+      await userEvent.click(screen.getByRole("button", { name: "Send" }));
+
+      await waitFor(() => {
+        expect(screen.getByText("Sorry, something went wrong.")).toBeInTheDocument();
+      });
+    });
+
     it("send button is disabled while loading", async () => {
-      // Use a fetch that never resolves to keep loading state
       global.fetch = jest.fn().mockReturnValue(new Promise(() => {}));
 
       render(<Home />);
@@ -146,9 +153,7 @@ describe("Home page", () => {
       await userEvent.type(input, TEST_USER_MESSAGE);
       await userEvent.click(button);
 
-      await waitFor(() => {
-        expect(button).toBeDisabled();
-      });
+      expect(button).toBeDisabled();
     });
 
     it("shows Thinking indicator while waiting for response", async () => {

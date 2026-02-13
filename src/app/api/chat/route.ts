@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { CHAT_MODEL, MAX_TOKENS } from "./model";
 
 const anthropic = new Anthropic();
 
@@ -6,8 +7,8 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const stream = anthropic.messages.stream({
-    model: "claude-sonnet-4-5-20250929",
-    max_tokens: 1024,
+    model: CHAT_MODEL,
+    max_tokens: MAX_TOKENS,
     messages,
   });
 

@@ -5,6 +5,7 @@
  * jsdom environment to get access to Node globals like Request and Response.
  */
 import { POST } from "../route";
+import { CHAT_MODEL, MAX_TOKENS } from "../model";
 import Anthropic from "@anthropic-ai/sdk";
 
 interface MockAnthropicConstructor {
@@ -90,9 +91,38 @@ describe("POST /api/chat", () => {
     await POST(req);
 
     expect(streamFn).toHaveBeenCalledWith({
-      model: "claude-sonnet-4-5-20250929",
-      max_tokens: 1024,
+      model: CHAT_MODEL,
+      max_tokens: MAX_TOKENS,
       messages,
     });
+  });
+
+  it("throws on invalid request body", async () => {
+    const req = new Request("http://localhost/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "not json",
+    });
+
+    await expect(POST(req)).rejects.toThrow();
+  });
+
+  it("propagates SDK stream errors", async () => {
+    streamFn.mockReturnValue({
+      async *[Symbol.asyncIterator]() {
+        throw new Error("Anthropic API error");
+      },
+    });
+
+    const req = new Request("http://localhost/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: [{ role: "user", content: "Hi" }] }),
+    });
+
+    const res = await POST(req);
+    const reader = res.body!.getReader();
+
+    await expect(reader.read()).rejects.toThrow("Anthropic API error");
   });
 });
