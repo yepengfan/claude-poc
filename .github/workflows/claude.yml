@@ -26,7 +26,7 @@ jobs:
           claude_args: "--max-turns 15"
           show_full_output: true
           prompt: |
-            Review this pull request and provide:
+            Review this pull request. Use `gh pr diff` to see the changes, then post your review as a PR comment using `gh pr comment` with the following format:
 
             ## Summary
             A concise summary of what this PR does and why.
@@ -42,6 +42,8 @@ jobs:
             - Code style and best practices
 
             If everything looks good, approve the PR. If there are issues, request changes with specific suggestions.
+
+            You MUST post the review as a comment on the PR using `gh pr comment`.
 
   respond:
     if: |
