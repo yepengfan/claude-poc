@@ -9,9 +9,40 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  claude:
+  review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 5"
+          prompt: |
+            Review this pull request and provide:
+
+            ## Summary
+            A concise summary of what this PR does and why.
+
+            ## Changes
+            A bullet-point breakdown of the key changes.
+
+            ## Code Review
+            Review the code for:
+            - Bugs or logic errors
+            - Security vulnerabilities
+            - Performance concerns
+            - Code style and best practices
+
+            If everything looks good, approve the PR. If there are issues, request changes with specific suggestions.
+
+  respond:
     if: |
-      (github.event_name == 'pull_request') ||
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude'))
     runs-on: ubuntu-latest
@@ -22,7 +53,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
