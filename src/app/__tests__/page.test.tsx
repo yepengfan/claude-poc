@@ -10,21 +10,26 @@ import Home from "../page";
 // Mock scrollIntoView which doesn't exist in jsdom
 Element.prototype.scrollIntoView = jest.fn();
 
-// Mock react-markdown to avoid ESM issues in Jest
+// react-markdown is an ESM-only package which Jest cannot import in a
+// CommonJS/jsdom environment. We replace it with a simple component that
+// renders its children as plain text, which is sufficient for verifying
+// that assistant message content is displayed.
 jest.mock("react-markdown", () => {
   return function MockReactMarkdown({ children }: { children: string }) {
     return <span>{children}</span>;
   };
 });
 
-function mockFetchStream(text: string) {
+const TEST_USER_MESSAGE = "Hello";
+const TEST_ASSISTANT_RESPONSE = "Bot reply";
+
+function mockFetchStream(chunks: string[]) {
   const encoder = new TextEncoder();
-  let called = false;
+  let index = 0;
   const reader = {
     read: jest.fn().mockImplementation(() => {
-      if (!called) {
-        called = true;
-        return Promise.resolve({ done: false, value: encoder.encode(text) });
+      if (index < chunks.length) {
+        return Promise.resolve({ done: false, value: encoder.encode(chunks[index++]) });
       }
       return Promise.resolve({ done: true, value: undefined });
     }),
@@ -59,17 +64,17 @@ describe("Home page", () => {
     it("typing in input updates value", async () => {
       render(<Home />);
       const input = screen.getByPlaceholderText("Type your message...");
-      await userEvent.type(input, "Hello");
-      expect(input).toHaveValue("Hello");
+      await userEvent.type(input, TEST_USER_MESSAGE);
+      expect(input).toHaveValue(TEST_USER_MESSAGE);
     });
 
     it("submitting form sends POST to /api/chat", async () => {
-      const fetchSpy = mockFetchStream("Hi there!");
+      const fetchSpy = mockFetchStream([TEST_ASSISTANT_RESPONSE]);
       global.fetch = fetchSpy;
 
       render(<Home />);
       const input = screen.getByPlaceholderText("Type your message...");
-      await userEvent.type(input, "Hello");
+      await userEvent.type(input, TEST_USER_MESSAGE);
       await userEvent.click(screen.getByRole("button", { name: "Send" }));
 
       await waitFor(() => {
@@ -79,13 +84,13 @@ describe("Home page", () => {
         );
         const callBody = JSON.parse(fetchSpy.mock.calls[0][1].body);
         expect(callBody.messages).toContainEqual(
-          expect.objectContaining({ role: "user", content: "Hello" }),
+          expect.objectContaining({ role: "user", content: TEST_USER_MESSAGE }),
         );
       });
     });
 
     it("user message appears in chat", async () => {
-      global.fetch = mockFetchStream("Response");
+      global.fetch = mockFetchStream(["Response"]);
 
       render(<Home />);
       await userEvent.type(screen.getByPlaceholderText("Type your message..."), "My message");
@@ -95,14 +100,26 @@ describe("Home page", () => {
     });
 
     it("assistant response appears after streaming", async () => {
-      global.fetch = mockFetchStream("Bot reply");
+      global.fetch = mockFetchStream([TEST_ASSISTANT_RESPONSE]);
 
       render(<Home />);
-      await userEvent.type(screen.getByPlaceholderText("Type your message..."), "Hi");
+      await userEvent.type(screen.getByPlaceholderText("Type your message..."), TEST_USER_MESSAGE);
       await userEvent.click(screen.getByRole("button", { name: "Send" }));
 
       await waitFor(() => {
-        expect(screen.getByText("Bot reply")).toBeInTheDocument();
+        expect(screen.getByText(TEST_ASSISTANT_RESPONSE)).toBeInTheDocument();
+      });
+    });
+
+    it("assembles response from multiple stream chunks", async () => {
+      global.fetch = mockFetchStream(["Bot", " re", "ply"]);
+
+      render(<Home />);
+      await userEvent.type(screen.getByPlaceholderText("Type your message..."), TEST_USER_MESSAGE);
+      await userEvent.click(screen.getByRole("button", { name: "Send" }));
+
+      await waitFor(() => {
+        expect(screen.getByText(TEST_ASSISTANT_RESPONSE)).toBeInTheDocument();
       });
     });
 
@@ -110,7 +127,7 @@ describe("Home page", () => {
       global.fetch = jest.fn().mockRejectedValue(new Error("Network error"));
 
       render(<Home />);
-      await userEvent.type(screen.getByPlaceholderText("Type your message..."), "Hi");
+      await userEvent.type(screen.getByPlaceholderText("Type your message..."), TEST_USER_MESSAGE);
       await userEvent.click(screen.getByRole("button", { name: "Send" }));
 
       await waitFor(() => {
@@ -126,11 +143,25 @@ describe("Home page", () => {
       const input = screen.getByPlaceholderText("Type your message...");
       const button = screen.getByRole("button", { name: "Send" });
 
-      await userEvent.type(input, "Hello");
+      await userEvent.type(input, TEST_USER_MESSAGE);
       await userEvent.click(button);
 
       await waitFor(() => {
         expect(button).toBeDisabled();
+      });
+    });
+
+    it("shows Thinking indicator while waiting for response", async () => {
+      // Fetch never resolves, so isLoading is true and no assistant message
+      // has been added yet — the "Thinking..." indicator should appear.
+      global.fetch = jest.fn().mockReturnValue(new Promise(() => {}));
+
+      render(<Home />);
+      await userEvent.type(screen.getByPlaceholderText("Type your message..."), TEST_USER_MESSAGE);
+      await userEvent.click(screen.getByRole("button", { name: "Send" }));
+
+      await waitFor(() => {
+        expect(screen.getByText("Thinking...")).toBeInTheDocument();
       });
     });
 
@@ -142,6 +173,47 @@ describe("Home page", () => {
       await userEvent.click(screen.getByRole("button", { name: "Send" }));
 
       expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it("whitespace-only input doesn't submit", async () => {
+      const fetchSpy = jest.fn();
+      global.fetch = fetchSpy;
+
+      render(<Home />);
+      await userEvent.type(screen.getByPlaceholderText("Type your message..."), "   ");
+      await userEvent.click(screen.getByRole("button", { name: "Send" }));
+
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it("preserves conversation history across messages", async () => {
+      // First message exchange
+      global.fetch = mockFetchStream(["First reply"]);
+      render(<Home />);
+
+      await userEvent.type(screen.getByPlaceholderText("Type your message..."), "First message");
+      await userEvent.click(screen.getByRole("button", { name: "Send" }));
+
+      await waitFor(() => {
+        expect(screen.getByText("First reply")).toBeInTheDocument();
+      });
+
+      // Second message exchange — previous messages should be sent to API
+      const fetchSpy = mockFetchStream(["Second reply"]);
+      global.fetch = fetchSpy;
+
+      await userEvent.type(screen.getByPlaceholderText("Type your message..."), "Second message");
+      await userEvent.click(screen.getByRole("button", { name: "Send" }));
+
+      await waitFor(() => {
+        expect(screen.getByText("Second reply")).toBeInTheDocument();
+      });
+
+      const callBody = JSON.parse(fetchSpy.mock.calls[0][1].body);
+      expect(callBody.messages).toHaveLength(3); // user, assistant, user
+      expect(callBody.messages[0]).toEqual({ role: "user", content: "First message" });
+      expect(callBody.messages[1]).toEqual({ role: "assistant", content: "First reply" });
+      expect(callBody.messages[2]).toEqual({ role: "user", content: "Second message" });
     });
   });
 });

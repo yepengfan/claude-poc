@@ -7,6 +7,11 @@
 import { POST } from "../route";
 import Anthropic from "@anthropic-ai/sdk";
 
+interface MockAnthropicConstructor {
+  new (): Anthropic;
+  __streamFn: jest.Mock;
+}
+
 jest.mock("@anthropic-ai/sdk", () => {
   const streamFn = jest.fn();
 
@@ -14,8 +19,7 @@ jest.mock("@anthropic-ai/sdk", () => {
     messages: { stream: streamFn },
   }));
 
-  // Expose streamFn so tests can access it
-  (MockAnthropic as any).__streamFn = streamFn;
+  (MockAnthropic as unknown as MockAnthropicConstructor).__streamFn = streamFn;
 
   return MockAnthropic;
 });
@@ -30,7 +34,7 @@ function createMockStream() {
   };
 }
 
-const streamFn = (Anthropic as any).__streamFn as jest.Mock;
+const streamFn = (Anthropic as unknown as MockAnthropicConstructor).__streamFn;
 
 describe("POST /api/chat", () => {
   beforeEach(() => {
