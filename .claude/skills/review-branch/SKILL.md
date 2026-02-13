@@ -1,5 +1,5 @@
 ---
-name: review
+name: review-branch
 description: Review the current branch's changes against main. Use this to get a local code review before pushing or creating a PR.
 ---
 
