@@ -24,6 +24,7 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: "--max-turns 15 --allowedTools 'Bash(gh:*)' 'Bash(git:*)' 'Read' 'Glob' 'Grep'"
+          use_sticky_comment: true
           prompt: |
             Review this pull request. Use `gh pr diff` to see the changes, then post your review as a PR comment using `gh pr comment` with the following format:
 
@@ -41,6 +42,8 @@ jobs:
             - Code style and best practices
 
             If everything looks good, approve the PR. If there are issues, request changes with specific suggestions.
+
+            If this PR has been updated since a previous review, focus on the new changes while keeping the overall review current.
 
             You MUST post the review as a comment on the PR using `gh pr comment`.
 
