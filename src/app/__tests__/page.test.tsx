@@ -263,5 +263,81 @@ describe("Home page", () => {
 
       expect(fetchSpy).not.toHaveBeenCalled();
     });
+
+    it("displays character counter with initial count", () => {
+      render(<Home />);
+      expect(screen.getByText("0/500")).toBeInTheDocument();
+    });
+
+    it("updates character counter as user types", async () => {
+      render(<Home />);
+      await userEvent.type(screen.getByPlaceholderText("Type your message..."), TEST_USER_MESSAGE);
+      expect(screen.getByText(`${TEST_USER_MESSAGE.length}/500`)).toBeInTheDocument();
+    });
+
+    it("truncates input at 500 characters", async () => {
+      render(<Home />);
+      const input = screen.getByPlaceholderText("Type your message...");
+      const longText = "a".repeat(600);
+
+      await userEvent.click(input);
+      await userEvent.paste(longText);
+
+      expect(input).toHaveValue("a".repeat(500));
+      expect(screen.getByText("500/500")).toBeInTheDocument();
+    });
+
+    it("shows truncation warning when input exceeds limit", async () => {
+      render(<Home />);
+      const input = screen.getByPlaceholderText("Type your message...");
+
+      await userEvent.click(input);
+      await userEvent.paste("a".repeat(600));
+
+      expect(screen.getByRole("alert")).toHaveTextContent("Message truncated to 500 characters");
+    });
+
+    it("does not show truncation warning for input within limit", async () => {
+      render(<Home />);
+      await userEvent.type(screen.getByPlaceholderText("Type your message..."), "Hello");
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+
+    it("clears truncation warning after submission", async () => {
+      global.fetch = mockFetchStream(["Reply"]);
+      render(<Home />);
+      const input = screen.getByPlaceholderText("Type your message...");
+
+      await userEvent.click(input);
+      await userEvent.paste("a".repeat(600));
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole("button", { name: "Send" }));
+
+      expect(screen.getByText("0/500")).toBeInTheDocument();
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+
+    it("does not show truncation warning at exactly 500 characters", async () => {
+      render(<Home />);
+      const input = screen.getByPlaceholderText("Type your message...");
+
+      await userEvent.click(input);
+      await userEvent.paste("a".repeat(500));
+
+      expect(input).toHaveValue("a".repeat(500));
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+
+    it("shows red counter at character limit", async () => {
+      render(<Home />);
+      const input = screen.getByPlaceholderText("Type your message...");
+
+      await userEvent.click(input);
+      await userEvent.paste("a".repeat(500));
+
+      const counter = screen.getByText("500/500");
+      expect(counter.className).toContain("text-red-500");
+    });
   });
 });
