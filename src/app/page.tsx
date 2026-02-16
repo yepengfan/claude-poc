@@ -86,7 +86,7 @@ export default function Home() {
               <div
                 className={`max-w-[80%] rounded-2xl px-4 py-2 whitespace-pre-wrap ${
                   msg.role === "user"
-                    ? "bg-sky-200 text-foreground"
+                    ? "bg-purple-200 text-foreground"
                     : "bg-foreground/5 text-foreground"
                 }`}
               >

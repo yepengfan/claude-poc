@@ -242,6 +242,51 @@ describe("Home page", () => {
     });
   });
 
+  describe("message bubble styling", () => {
+    it("renders user message with light purple background", async () => {
+      global.fetch = mockFetchStream([TEST_ASSISTANT_RESPONSE]);
+
+      render(<Home />);
+      await userEvent.type(screen.getByPlaceholderText("Type your message..."), TEST_USER_MESSAGE);
+      await userEvent.click(screen.getByRole("button", { name: "Send" }));
+
+      const userBubble = screen.getByText(TEST_USER_MESSAGE).closest("div");
+      expect(userBubble?.className).toContain("bg-purple-200");
+    });
+
+    it("renders assistant message without purple background", async () => {
+      global.fetch = mockFetchStream([TEST_ASSISTANT_RESPONSE]);
+
+      render(<Home />);
+      await userEvent.type(screen.getByPlaceholderText("Type your message..."), TEST_USER_MESSAGE);
+      await userEvent.click(screen.getByRole("button", { name: "Send" }));
+
+      await waitFor(() => {
+        expect(screen.getByText(TEST_ASSISTANT_RESPONSE)).toBeInTheDocument();
+      });
+
+      const assistantText = screen.getByText(TEST_ASSISTANT_RESPONSE);
+      // Navigate up: <span> → <div class="prose"> → <div class="bg-foreground/5">
+      const assistantBubble = assistantText.closest("div.prose")?.parentElement;
+      expect(assistantBubble?.className).not.toContain("bg-purple-200");
+      expect(assistantBubble?.className).toContain("bg-foreground/5");
+    });
+
+    it("does not use bg-sky-200 on any message bubble", async () => {
+      global.fetch = mockFetchStream([TEST_ASSISTANT_RESPONSE]);
+
+      render(<Home />);
+      await userEvent.type(screen.getByPlaceholderText("Type your message..."), TEST_USER_MESSAGE);
+      await userEvent.click(screen.getByRole("button", { name: "Send" }));
+
+      await waitFor(() => {
+        expect(screen.getByText(TEST_ASSISTANT_RESPONSE)).toBeInTheDocument();
+      });
+
+      expect(document.body.innerHTML).not.toContain("bg-sky-200");
+    });
+  });
+
   describe("input validation", () => {
     it("empty input doesn't submit", async () => {
       const fetchSpy = jest.fn();
