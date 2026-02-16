@@ -67,7 +67,10 @@ export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-background font-sans">
       <header className="border-b border-foreground/10 px-4 py-3">
-        <h1 className="text-center text-lg font-semibold">Claude Chatbot</h1>
+        <div className="flex items-center justify-center gap-2">
+          <span role="img" aria-label="rocket">🚀</span>
+          <h1 className="text-lg font-semibold">Knowledge Assistant</h1>
+        </div>
         <p className="text-center text-sm text-foreground/60">Powered by Claude</p>
       </header>
 

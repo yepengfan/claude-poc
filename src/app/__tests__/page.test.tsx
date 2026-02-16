@@ -47,7 +47,7 @@ describe("Home page", () => {
   describe("rendering", () => {
     it("shows header with title", () => {
       render(<Home />);
-      expect(screen.getByText("Claude Chatbot")).toBeInTheDocument();
+      expect(screen.getByText("Knowledge Assistant")).toBeInTheDocument();
     });
 
     it("shows empty state message", () => {
@@ -59,6 +59,37 @@ describe("Home page", () => {
       render(<Home />);
       expect(screen.getByPlaceholderText("Type your message...")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Send" })).toBeInTheDocument();
+    });
+  });
+
+  describe("header branding", () => {
+    it("displays Knowledge Assistant as the title", () => {
+      render(<Home />);
+      expect(screen.getByText("Knowledge Assistant")).toBeInTheDocument();
+    });
+
+    it("does not display old Claude Chatbot title", () => {
+      render(<Home />);
+      expect(screen.queryByText("Claude Chatbot")).not.toBeInTheDocument();
+    });
+
+    it("displays rocket emoji beside the title", () => {
+      render(<Home />);
+      const rocket = screen.getByRole("img", { name: "rocket" });
+      expect(rocket).toBeInTheDocument();
+      expect(rocket.textContent).toBe("\u{1F680}");
+    });
+
+    it("renders emoji and title in the same flex row", () => {
+      render(<Home />);
+      const rocket = screen.getByRole("img", { name: "rocket" });
+      const title = screen.getByText("Knowledge Assistant");
+      expect(rocket.parentElement).toBe(title.parentElement);
+    });
+
+    it("still displays Powered by Claude subtitle", () => {
+      render(<Home />);
+      expect(screen.getByText("Powered by Claude")).toBeInTheDocument();
     });
   });
 
