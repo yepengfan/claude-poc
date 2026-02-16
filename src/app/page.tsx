@@ -8,10 +8,13 @@ interface Message {
   content: string;
 }
 
+const MAX_INPUT_LENGTH = 500;
+
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showTruncationWarning, setShowTruncationWarning] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -27,6 +30,7 @@ export default function Home() {
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
     setInput("");
+    setShowTruncationWarning(false);
     setIsLoading(true);
 
     try {
@@ -114,14 +118,37 @@ export default function Home() {
           onSubmit={handleSubmit}
           className="border-t border-foreground/10 p-4 flex gap-2"
         >
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
-            className="flex-1 rounded-xl border border-foreground/20 bg-background px-4 py-2 text-foreground outline-none focus:border-foreground/40"
-            disabled={isLoading}
-          />
+          <div className="flex flex-1 flex-col gap-1">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (raw.length > MAX_INPUT_LENGTH) {
+                  setInput(raw.slice(0, MAX_INPUT_LENGTH));
+                  setShowTruncationWarning(true);
+                } else {
+                  setInput(raw);
+                  setShowTruncationWarning(false);
+                }
+              }}
+              placeholder="Type your message..."
+              className="flex-1 rounded-xl border border-foreground/20 bg-background px-4 py-2 text-foreground outline-none focus:border-foreground/40"
+              disabled={isLoading}
+            />
+            <div className="flex justify-between">
+              {showTruncationWarning ? (
+                <span className="text-xs text-red-500" role="alert">
+                  Message truncated to {MAX_INPUT_LENGTH} characters
+                </span>
+              ) : (
+                <span />
+              )}
+              <span className={`text-xs ${input.length >= MAX_INPUT_LENGTH ? "text-red-500" : "text-foreground/40"}`}>
+                {input.length}/{MAX_INPUT_LENGTH}
+              </span>
+            </div>
+          </div>
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
