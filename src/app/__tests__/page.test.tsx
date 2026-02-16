@@ -16,6 +16,13 @@ jest.mock("react-markdown", () => {
   };
 });
 
+jest.mock("next/image", () => {
+  return function MockImage(props: React.ImgHTMLAttributes<HTMLImageElement>) {
+    // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
+    return <img {...props} />;
+  };
+});
+
 const TEST_USER_MESSAGE = "Hello";
 const TEST_ASSISTANT_RESPONSE = "Bot reply";
 
@@ -59,6 +66,38 @@ describe("Home page", () => {
       render(<Home />);
       expect(screen.getByPlaceholderText("Type your message...")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Send" })).toBeInTheDocument();
+    });
+  });
+
+  describe("header logo", () => {
+    it("renders the Anthropic logo in the header", () => {
+      render(<Home />);
+      const logo = screen.getByAltText("Anthropic logo");
+      expect(logo).toBeInTheDocument();
+      expect(logo.tagName.toLowerCase()).toBe("img");
+      expect(logo).toHaveAttribute("src", expect.stringContaining("anthropic-logo"));
+    });
+
+    it("renders the logo beside the title text", () => {
+      render(<Home />);
+      const logo = screen.getByAltText("Anthropic logo");
+      const title = screen.getByText("Claude Chatbot");
+      const logoParent = logo.parentElement;
+      const titleParent = title.parentElement;
+      expect(logoParent).toBe(titleParent);
+    });
+
+    it("renders logo with correct dimensions", () => {
+      render(<Home />);
+      const logo = screen.getByAltText("Anthropic logo");
+      expect(logo).toHaveAttribute("width", "28");
+      expect(logo).toHaveAttribute("height", "28");
+    });
+
+    it("still displays the title and subtitle", () => {
+      render(<Home />);
+      expect(screen.getByText("Claude Chatbot")).toBeInTheDocument();
+      expect(screen.getByText("Powered by Claude")).toBeInTheDocument();
     });
   });
 
