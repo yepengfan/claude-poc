@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import Image from "next/image";
 import ReactMarkdown from "react-markdown";
 
 interface Message {
@@ -73,8 +72,8 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-background font-sans">
       <header className="border-b border-foreground/10 px-4 py-3">
         <div className="flex items-center justify-center gap-2">
-          <Image src="/anthropic-logo.svg" alt="Anthropic logo" width={28} height={28} />
-          <h1 className="text-lg font-semibold">Claude Chatbot</h1>
+          <span role="img" aria-label="rocket">🚀</span>
+          <h1 className="text-lg font-semibold">Knowledge Assistant</h1>
         </div>
         <p className="text-center text-sm text-foreground/60">Powered by Claude</p>
       </header>

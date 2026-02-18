@@ -16,13 +16,6 @@ jest.mock("react-markdown", () => {
   };
 });
 
-jest.mock("next/image", () => {
-  return function MockImage(props: React.ImgHTMLAttributes<HTMLImageElement>) {
-    // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
-    return <img {...props} />;
-  };
-});
-
 const TEST_USER_MESSAGE = "Hello";
 const TEST_ASSISTANT_RESPONSE = "Bot reply";
 
@@ -54,7 +47,7 @@ describe("Home page", () => {
   describe("rendering", () => {
     it("shows header with title", () => {
       render(<Home />);
-      expect(screen.getByText("Claude Chatbot")).toBeInTheDocument();
+      expect(screen.getByText("Knowledge Assistant")).toBeInTheDocument();
     });
 
     it("shows empty state message", () => {
@@ -69,34 +62,33 @@ describe("Home page", () => {
     });
   });
 
-  describe("header logo", () => {
-    it("renders the Anthropic logo in the header", () => {
+  describe("header branding", () => {
+    it("displays Knowledge Assistant as the title", () => {
       render(<Home />);
-      const logo = screen.getByAltText("Anthropic logo");
-      expect(logo).toBeInTheDocument();
-      expect(logo.tagName.toLowerCase()).toBe("img");
-      expect(logo).toHaveAttribute("src", expect.stringContaining("anthropic-logo"));
+      expect(screen.getByText("Knowledge Assistant")).toBeInTheDocument();
     });
 
-    it("renders the logo beside the title text", () => {
+    it("does not display old Claude Chatbot title", () => {
       render(<Home />);
-      const logo = screen.getByAltText("Anthropic logo");
-      const title = screen.getByText("Claude Chatbot");
-      const logoParent = logo.parentElement;
-      const titleParent = title.parentElement;
-      expect(logoParent).toBe(titleParent);
+      expect(screen.queryByText("Claude Chatbot")).not.toBeInTheDocument();
     });
 
-    it("renders logo with correct dimensions", () => {
+    it("displays rocket emoji beside the title", () => {
       render(<Home />);
-      const logo = screen.getByAltText("Anthropic logo");
-      expect(logo).toHaveAttribute("width", "28");
-      expect(logo).toHaveAttribute("height", "28");
+      const rocket = screen.getByRole("img", { name: "rocket" });
+      expect(rocket).toBeInTheDocument();
+      expect(rocket.textContent).toBe("🚀");
     });
 
-    it("still displays the title and subtitle", () => {
+    it("renders emoji and title in the same flex row", () => {
       render(<Home />);
-      expect(screen.getByText("Claude Chatbot")).toBeInTheDocument();
+      const rocket = screen.getByRole("img", { name: "rocket" });
+      const title = screen.getByText("Knowledge Assistant");
+      expect(rocket.parentElement).toBe(title.parentElement);
+    });
+
+    it("still displays Powered by Claude subtitle", () => {
+      render(<Home />);
       expect(screen.getByText("Powered by Claude")).toBeInTheDocument();
     });
   });
