@@ -23,7 +23,8 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: "--max-turns 15 --allowedTools 'Bash(gh:*)' 'Bash(git:*)' 'Read' 'Glob' 'Grep'"
+          max_turns: "15"
+          allowed_tools: "Bash(gh:*),Bash(git:*),Read,Glob,Grep"
           use_sticky_comment: true
           prompt: |
             Review this pull request. Use `gh pr diff` to see the changes, then post your review as a PR comment using `gh pr comment` with the following format:
@@ -64,4 +65,5 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: "--max-turns 15 --allowedTools 'Bash(gh:*)' 'Bash(git:*)' 'Read' 'Glob' 'Grep'"
+          max_turns: "15"
+          allowed_tools: "Bash(gh:*),Bash(git:*),Read,Glob,Grep"
